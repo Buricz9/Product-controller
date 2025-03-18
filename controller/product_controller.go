@@ -7,6 +7,7 @@ import (
 	"product-controller/models"
 	"product-controller/service"
 	"strconv"
+	"strings"
 )
 
 type ProductController struct {
@@ -65,6 +66,10 @@ func (c *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Request
 
 	err = c.ProductService.UpdateProduct(uint(id), &updatedProduct)
 	if err != nil {
+		if strings.Contains(err.Error(), "nie istnieje") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -88,4 +93,44 @@ func (c *ProductController) DeleteProduct(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent) // 204 No Content
+}
+
+func (c *ProductController) GetProductHistory(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		http.Error(w, "Nieprawidłowe ID produktu", http.StatusBadRequest)
+		return
+	}
+
+	history, err := c.ProductService.GetProductHistory(uint(id))
+	if err != nil {
+		http.Error(w, "Błąd pobierania historii produktu", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
+}
+
+func (c *ProductController) GetProductByID(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		http.Error(w, "Nieprawidłowe ID produktu", http.StatusBadRequest)
+		return
+	}
+
+	product, err := c.ProductService.ProductRepo.GetProductByID(uint(id))
+	if err != nil {
+		if err.Error() == "record not found" {
+			http.Error(w, "Produkt nie znaleziony", http.StatusNotFound)
+		} else {
+			http.Error(w, "Błąd pobierania produktu: "+err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(product)
 }

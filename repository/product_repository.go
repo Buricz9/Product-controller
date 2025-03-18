@@ -54,3 +54,9 @@ func (r *ProductRepository) SaveProductHistory(history *models.ProductHistory) e
 	result := r.DB.Create(history)
 	return result.Error
 }
+
+func (r *ProductRepository) GetProductHistory(productID uint) ([]models.ProductHistory, error) {
+	var history []models.ProductHistory
+	result := r.DB.Where("product_id = ?", productID).Find(&history)
+	return history, result.Error
+}

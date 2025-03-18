@@ -32,6 +32,7 @@ func main() {
 
 	productService := service.NewProductService(productRepo, blacklistRepo)
 	productController := controller.NewProductController(productService)
+	blacklistController := controller.NewBlacklistController(blacklistRepo)
 
 	// Router
 	r := chi.NewRouter()
@@ -42,6 +43,14 @@ func main() {
 	r.Post("/products", productController.AddProduct)
 	r.Delete("/products/{id}", productController.DeleteProduct)
 	r.Put("/products/{id}", productController.UpdateProduct)
+	r.Get("/products/{id}", productController.GetProductByID)
+
+	// Endpointy dla blacklisty
+	r.Get("/blacklist", blacklistController.GetAllBlacklistWords)
+	r.Post("/blacklist", blacklistController.AddBlacklistWord)
+	r.Delete("/blacklist/{id}", blacklistController.DeleteBlacklistWord)
+
+	r.Get("/products/{id}/history", productController.GetProductHistory)
 
 	log.Println("Serwer nasłuchuje na porcie :8080")
 	http.ListenAndServe(":8080", r)

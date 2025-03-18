@@ -86,11 +86,12 @@ func (s *ProductService) saveProductHistory(productID uint, field, oldValue, new
 		OldValue:  oldValue,
 		NewValue:  newValue,
 	}
-	// Brak obsługi błędów na razie - dodaj jeśli chcesz lepszą kontrolę
 	s.ProductRepo.SaveProductHistory(&history)
 }
 
 func (s *ProductService) DeleteProduct(id uint) error {
-	// Możesz dodać dodatkową logikę np. sprawdzenie czy produkt istnieje
 	return s.ProductRepo.DeleteProduct(id)
+}
+func (s *ProductService) GetProductHistory(productID uint) ([]models.ProductHistory, error) {
+	return s.ProductRepo.GetProductHistory(productID)
 }
