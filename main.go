@@ -2,10 +2,15 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"product-controller/config"
+	"product-controller/controller"
 	"product-controller/models"
 	"product-controller/repository"
 	"product-controller/service"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
@@ -21,33 +26,23 @@ func main() {
 		log.Fatal("Błąd migracji:", err)
 	}
 
-	log.Println("Migracje zakończone!")
-
-	// Inicjalizacja repozytoriów
+	// Inicjalizacja warstw
 	productRepo := repository.NewProductRepository()
 	blacklistRepo := repository.NewBlacklistRepository()
 
-	// Dodaj zabronione słowo (na test)
-	err = blacklistRepo.AddBlacklistWord(&models.BlacklistWord{Word: "zakazany"})
-	if err != nil {
-		log.Fatal("Błąd dodawania blacklisty:", err)
-	}
-
-	// Inicjalizacja serwisu
 	productService := service.NewProductService(productRepo, blacklistRepo)
+	productController := controller.NewProductController(productService)
 
-	// Produkt testowy z zakazanym słowem
-	newProduct := &models.Product{
-		Name:        "Zakazany laptop",
-		Description: "Nie powinien się dodać",
-		Price:       999.99,
-		Quantity:    2,
-	}
+	// Router
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
-	err = productService.AddProduct(newProduct)
-	if err != nil {
-		log.Println("Błąd dodania produktu:", err)
-	} else {
-		log.Println("Dodano produkt:", newProduct)
-	}
+	// Endpointy
+	r.Get("/products", productController.GetAllProducts)
+	r.Post("/products", productController.AddProduct)
+	r.Delete("/products/{id}", productController.DeleteProduct)
+	r.Put("/products/{id}", productController.UpdateProduct)
+
+	log.Println("Serwer nasłuchuje na porcie :8080")
+	http.ListenAndServe(":8080", r)
 }

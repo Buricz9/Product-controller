@@ -49,3 +49,8 @@ func (r *ProductRepository) DeleteProduct(id uint) error {
 	result := r.DB.Delete(&models.Product{}, id)
 	return result.Error
 }
+
+func (r *ProductRepository) SaveProductHistory(history *models.ProductHistory) error {
+	result := r.DB.Create(history)
+	return result.Error
+}
