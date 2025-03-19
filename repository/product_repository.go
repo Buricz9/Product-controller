@@ -60,3 +60,14 @@ func (r *ProductRepository) GetProductHistory(productID uint) ([]models.ProductH
 	result := r.DB.Where("product_id = ?", productID).Find(&history)
 	return history, result.Error
 }
+
+func (r *ProductRepository) GetProductByName(name string) (*models.Product, error) {
+	var product models.Product
+	result := r.DB.Where("name = ?", name).First(&product)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &product, nil
+}

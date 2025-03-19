@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"product-controller/models"
 	"product-controller/repository"
+	"regexp"
 	"strings"
 )
 
@@ -25,6 +26,9 @@ func (s *ProductService) AddProduct(product *models.Product) error {
 	if err != nil {
 		return err
 	}
+	if err = s.validateProduct(product); err != nil {
+		return err
+	}
 
 	// Sprawdź, czy nazwa produktu zawiera zabronione słowo
 	for _, word := range blacklist {
@@ -41,6 +45,12 @@ func (s *ProductService) UpdateProduct(id uint, updatedProduct *models.Product) 
 	// Pobierz istniejący produkt
 	existingProduct, err := s.ProductRepo.GetProductByID(id)
 	if err != nil {
+		return err
+	}
+
+	updatedProduct.ID = id
+
+	if err = s.validateProduct(updatedProduct); err != nil {
 		return err
 	}
 
@@ -94,4 +104,47 @@ func (s *ProductService) DeleteProduct(id uint) error {
 }
 func (s *ProductService) GetProductHistory(productID uint) ([]models.ProductHistory, error) {
 	return s.ProductRepo.GetProductHistory(productID)
+}
+
+func (s *ProductService) validateProduct(product *models.Product) error {
+	// Walidacja nazwy
+	if len(product.Name) < 3 || len(product.Name) > 20 {
+		return errors.New("nazwa produktu musi mieć od 3 do 20 znaków")
+	}
+
+	namePattern := `^[a-zA-Z0-9]+$`
+	matched, _ := regexp.MatchString(namePattern, product.Name)
+	if !matched {
+		return errors.New("nazwa produktu może zawierać tylko litery i cyfry")
+	}
+
+	existing, _ := s.ProductRepo.GetProductByName(product.Name)
+	if existing != nil && existing.ID != product.ID {
+		return errors.New("produkt o tej nazwie już istnieje")
+	}
+
+	var minPrice, maxPrice float64
+	switch strings.ToLower(product.Category) {
+	case "elektronika":
+		minPrice = 50
+		maxPrice = 50000
+	case "książki":
+		minPrice = 5
+		maxPrice = 500
+	case "odzież":
+		minPrice = 10
+		maxPrice = 5000
+	default:
+		return errors.New("kategoria musi być jedną z: Elektronika, Książki, Odzież")
+	}
+
+	if product.Price < minPrice || product.Price > maxPrice {
+		return fmt.Errorf("cena produktu w kategorii %s musi być w przedziale %.2f - %.2f", product.Category, minPrice, maxPrice)
+	}
+
+	if product.Quantity < 0 {
+		return errors.New("ilość produktów nie może być ujemna")
+	}
+
+	return nil
 }
